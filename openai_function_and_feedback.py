@@ -3,11 +3,11 @@ import json
 from honeyhive.sdk.tracer import HoneyHiveTracer
 from openai import OpenAI
 
-open_key = ""
-hhai_key = ""
+open_key = "OPENAI_API_KEY"
+hhai_key = "HONEYHIVE_API_KEY"
 honeyhive.api_key = hhai_key
 
-project_name = "Weather Bot"
+project_name = "New Project"
 
 client = OpenAI(
     api_key=open_key
@@ -15,21 +15,23 @@ client = OpenAI(
 
 # Instatiate your HoneyHiveTracer
 honeyhive_tracer = HoneyHiveTracer(
-    project="Weather Bot",
+    project=project_name,
     name="Weather Bot",
     source="testing"
 )
 
 # Calling a dummy function
 def get_current_weather(location, format):
-    return "It's 40 degrees fahrenheit and rainy in " + location + "."
+    return "It's 40 degrees " + format + " and rainy in " + location + "."
 
 # A function to add function response to messages
-def execute_function_call(message):
+def execute_function_call(message, honeyhive_tracer):
+    function_call_args = json.loads(message["tool_calls"][0]["function"]["arguments"])
     if message["tool_calls"][0]["function"]["name"] == "get_current_weather":
-        format = json.loads(message["tool_calls"][0]["function"]["arguments"])["format"]
-        location = json.loads(message["tool_calls"][0]["function"]["arguments"])["location"]
-        results = get_current_weather(location, format)
+        with honeyhive_tracer.tool(
+            event_name="get_current_weather"
+        ):
+            results = get_current_weather(function_call_args["location"], function_call_args["format"])
     else:
         results = f"Error: function {message['tool_calls'][0]['function']['name']} does not exist"
     return results
@@ -87,8 +89,6 @@ with honeyhive_tracer.model(
         tools=tools
     ).json()
 
-    
-    
 # making sure messages persists the location info
 messages = honeyhive.utils.fill_chat_template(messages, input_dict)
 
@@ -98,7 +98,7 @@ assistant_message = json.loads(openai_response)["choices"][0]["message"]
 del assistant_message["function_call"]
 messages.append(assistant_message)
 
-results = execute_function_call(assistant_message)
+results = execute_function_call(assistant_message, honeyhive_tracer)
 messages.append({"role": "tool", 
                  "tool_call_id": assistant_message["tool_calls"][0]['id'], 
                  "name": assistant_message["tool_calls"][0]["function"]["name"], 
@@ -117,8 +117,11 @@ with honeyhive_tracer.model(
 
 # log feedback for the session
 session_id = honeyhive_tracer.session_id
-honeyhive.sdk.feedback(session_id=session_id, feedback={
+honeyhive.sdk.feedback(
+    session_id=session_id,
+    feedback={
         "provided": True,
         "accepted": False,
         "edited": True
-    })
+    }
+)
