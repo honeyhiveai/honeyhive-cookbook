@@ -5,4 +5,4 @@
 For sharing useful gists for doing different things with HoneyHive
 
 ## Current **working** gists
-- Tracing function calling + providing feedback
+- [Tracing function calling + providing feedback](https://github.com/honeyhiveai/honeyhive-cookbook/blob/main/openai_function_and_feedback.py)
