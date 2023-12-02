@@ -1,6 +1,8 @@
 # HoneyHive Cookbook
 
-Sharing useful gists for doing different things with HoneyHive
+**Warning This Repo is a work in progress, everything in the `docs` does not work**
 
-Current gists
+For sharing useful gists for doing different things with HoneyHive
+
+## Current **working** gists
 - Tracing function calling + providing feedback
